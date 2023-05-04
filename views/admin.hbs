@@ -1,0 +1,77 @@
+
+<main>
+    <form class="login-form">
+        <h3>Введите логин</h3>
+        <input type="text" name="login" id="login">
+        <h3>Введите пароль</h3>
+        <input type="text" name="password" id="password">
+        <button type="button" id="loginBtn">Войти</button>
+    </form>
+</main>
+
+
+<script>
+    
+    const ip = "http://" + window.location.host;
+    let strCookies = document.cookie.split("; ");
+    for(const cookieIndex in strCookies) {
+        strCookies[cookieIndex] = { name: strCookies[cookieIndex].split("=")[0], value: strCookies[cookieIndex].split("=")[1] };
+    }
+    let cookies = {};
+    for(let strCookie of strCookies) {
+        cookies[strCookie.name] = strCookie.value;
+    }
+
+    if(cookies.login !== undefined && cookies.password !== undefined) {
+        const data = { login: cookies.login, password: cookies.password };
+        getAdminPage(data);
+    }
+    else {
+        document.getElementById("loginBtn").addEventListener(
+        "click",
+        (e) => {
+            const enteredLogin = document.getElementById("login").value;
+            const enteredPassword = document.getElementById("password").value;
+
+            const data = { login: enteredLogin, password: enteredPassword };
+
+            getAdminPage(data);
+        });
+    }
+
+    function getAdminPage(data) {
+        fetch(ip+"/admin/", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+        }).then( async (response) => {
+            let result = await response.text();
+            if(result == "Incorrect") {
+                alert("Не верные данные!");
+                return;
+            }
+            result = result.split("\n");
+            result.splice(0, 1);
+            result.splice(0, 1);
+            result.splice(result.length-1, 1);
+            result = result.join("\n");
+
+            let elem = document.getElementsByTagName('html')[0];
+            elem.removeChild(document.body);
+            elem.removeChild(document.head);
+
+            elem.innerHTML = result;
+
+            let expire = new Date();
+            expire.setHours(expire.getHours() + 1);
+            document.cookie = `login=${data.login};expires=${expire.toUTCString()};`;
+            document.cookie = `password=${data.password};expires=${expire.toUTCString()};`;
+
+            {{script}}
+        }).catch(error => {
+            console.error('Ошибка:', error);
+        });
+    }
+</script>
